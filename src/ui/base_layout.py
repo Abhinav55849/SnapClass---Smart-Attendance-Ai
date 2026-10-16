@@ -55,11 +55,13 @@ def style_base_layout():
         h2 {
             font-family: 'Climate Crisis', sans-serif !important;
             font-size: 2rem !important;
-            line-height: 0.5 !important;
+            line-height: 1.2 !important;
             margin-bottom: 0rem !important;
-            color: #2E2E2E !important;
         }
 
+        .stApp div[data-testid="stColumn"] h2 {
+            color: #2E2E2E !important;
+        }        
         h3, h4, p {
             font-family: 'Outfit', sans-serif;
         }
