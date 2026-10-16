@@ -24,13 +24,15 @@ def load_dlib_models():
 
 def get_face_embeddings(image_np):
     detector, sp, facerec = load_dlib_models()
+
+    # Use 2 instead of 1 to detect smaller faces in group photos (slower)
     faces = detector(image_np, 1)
 
     encodings = []
 
     for face in faces:
         shape = sp(image_np, face)
-        face_descriptor = facerec.compute_face_descriptor(image_np, shape, 1) 
+        face_descriptor = facerec.compute_face_descriptor(image_np, shape, 1)
         encodings.append(np.array(face_descriptor))
 
     return encodings
@@ -52,6 +54,7 @@ def get_trained_model():
 
     if len(X) == 0:
         return None
+
     clf = None
     if len(set(y)) >= 2:
         clf = SVC(kernel='linear', class_weight='balanced')
@@ -84,17 +87,26 @@ def predicted_attendance(class_image_np):
 
     all_students = sorted(list(set(y_train)))
 
+    resemblance_threshold = 0.6
+
     for encoding in encodings:
         if clf is not None and len(all_students) >= 2:
             predicted_id = int(clf.predict([encoding])[0])
         else:
             predicted_id = int(all_students[0])
 
-        student_embedding = X_train[y_train.index(predicted_id)]
+        # Compare with ALL stored embeddings of the predicted student
+        student_embeddings = [
+            X_train[i] for i, sid in enumerate(y_train)
+            if int(sid) == predicted_id
+        ]
 
-        best_match_score = np.linalg.norm(student_embedding - encoding)
+        if not student_embeddings:
+            continue
 
-        resemblance_threshold = 0.6
+        best_match_score = min(
+            np.linalg.norm(e - encoding) for e in student_embeddings
+        )
 
         if best_match_score <= resemblance_threshold:
             detected_student[predicted_id] = True
